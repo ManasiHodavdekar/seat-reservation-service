@@ -1,0 +1,76 @@
+spring:
+  application:
+    name: seat-reservation-service
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:seat_reservation}?useSSL=false&allowPublicKeyRetrieval=true&rewriteBatchedStatements=true&createDatabaseIfNotExist=true
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:50}
+      connection-timeout: ${DB_CONNECTION_TIMEOUT_MS:10000}
+      pool-name: seat-reservation-pool
+  sql:
+    init:
+      mode: always
+      continue-on-error: false
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  jackson:
+    default-property-inclusion: non_null
+    property-naming-strategy: SNAKE_CASE
+
+server:
+  port: ${PORT:8080}
+  tomcat:
+    threads:
+      max: ${TOMCAT_MAX_THREADS:400}
+      min-spare: 20
+  shutdown: graceful
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info
+      base-path: /actuator
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+      group:
+        readiness:
+          include: readinessState,db
+        liveness:
+          include: livenessState
+  health:
+    readinessstate:
+      enabled: true
+    livenessstate:
+      enabled: true
+    defaults:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:dev-only-secret-change-me-this-must-be-at-least-32-bytes}
+    ttl-seconds: ${JWT_TTL_SECONDS:3600}
+  reservation:
+    default-per-user-limit: ${DEFAULT_PER_USER_LIMIT:4}
+
+logging:
+  pattern:
+    console: "%d{ISO8601} %-5level [%X{requestId:--}] %logger{36} - %msg%n"

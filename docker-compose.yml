@@ -1,0 +1,40 @@
+services:
+  mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-devpassword}
+      MYSQL_DATABASE: seat_reservation
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-devpassword}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  app:
+    build: .
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: seat_reservation
+      DB_USER: root
+      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-devpassword}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me-this-must-be-at-least-32-bytes}
+      PORT: 8080
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health/liveness"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 10
+
+volumes:
+  mysql_data:
